@@ -34,6 +34,7 @@ struct st_gif {
   CGIFRaw*           pGIFRaw;                   // (internal) raw GIF stream
   FILE*              pFile;
   cgif_result        curResult;
+  int                iHead;
 };
 
 /* calculate next power of two exponent of given number (n MUST be <= 256) */
@@ -96,6 +97,7 @@ CGIF* cgif_newgif(CGIF_Config* pConfig) {
   }
 
   memset(pGIF, 0, sizeof(CGIF));
+  pGIF->iHead = 1; // index to HEAD in frame queue
   pGIF->pFile = pFile;
   memcpy(&(pGIF->config), pConfig, sizeof(CGIF_Config));
   // make a deep copy of global color tabele (GCT), if required.
@@ -408,9 +410,9 @@ int cgif_addframe(CGIF* pGIF, CGIF_FrameConfig* pConfig) {
   }
 
   // if frame matches previous frame, drop it completely and sum the frame delay
-  if (pGIF->aFrames[1] != NULL) {
-    const uint32_t frameDelay = pConfig->delay + pGIF->aFrames[1]->config.delay;
-    dimInfo = getChangeRect(pGIF, pConfig, &pGIF->aFrames[1]->config);
+  if (pGIF->aFrames[pGIF->iHead] != NULL) {
+    const uint32_t frameDelay = pConfig->delay + pGIF->aFrames[pGIF->iHead]->config.delay;
+    dimInfo = getChangeRect(pGIF, pConfig, &pGIF->aFrames[pGIF->iHead]->config);
     if (frameDelay <= 0xFFFF && !(pGIF->config.genFlags & CGIF_GEN_KEEP_IDENT_FRAMES)) {
       if (!dimInfo.width && !dimInfo.height) {
         pGIF->aFrames[1]->config.delay = frameDelay;
@@ -437,6 +439,7 @@ int cgif_addframe(CGIF* pGIF, CGIF_FrameConfig* pConfig) {
     pGIF->aFrames[0] = pGIF->aFrames[1];
     pGIF->aFrames[1] = pGIF->aFrames[2];
   }
+  pGIF->iHead = i;
   // create new Frame struct + make a deep copy of pConfig.
   pNewFrame = malloc(sizeof(CGIF_Frame));
   copyFrameConfig(&(pNewFrame->config), pConfig);
