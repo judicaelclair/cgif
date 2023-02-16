@@ -97,7 +97,7 @@ struct st_cgif_rgb_config {
 };
 
 struct st_cgif_rgb_frameconfig {
-  uint8_t* pImageData;
+  uint8_t const* pImageData;
   cgif_chan_fmt fmtChan;
   uint32_t attrFlags;   // TBD
   uint32_t genFlags;    // TBD
